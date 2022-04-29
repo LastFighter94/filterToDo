@@ -3,11 +3,11 @@
   <div
     class="add-bar"
   >
-    <button 
+    <button
       @click="toggleAddTaskForm"
     >
-      <span 
-        v-text="this.addTaskFormState ? 
+      <span
+        v-text="this.addTaskFormState ?
         (previewTask.taskName || previewTask.todos.length ? 'Продолжить добавление задания' : 'Добавить задание') :
         'Закрыть панель'"
       >
@@ -15,18 +15,18 @@
     </button>
   </div>
 
-  <div 
+  <div
     class="add-container"
     v-if="showForm"
   >
-    <div 
+    <div
       class="add-container__task-form"
     >
     <form
       @submit.prevent="submit_task"
     >
 
-      <button 
+      <button
         v-if="previewTask.taskName && previewTask.todos.length && !previewTask.editState && !previewTask.taskNameEditState"
         type="submit"
         class="add-container__task-form__btn mb-5"
@@ -35,13 +35,13 @@
       </button>
 
       <p>
-      <input 
+      <input
         v-model="taskName"
-        type="text" 
+        type="text"
         placeholder="Имя Задания"
       >
 
-      <button 
+      <button
         class="add-container__task-form__btn ml-5 mb-5"
         @click.prevent="addTaskName"
       >
@@ -52,13 +52,13 @@
       </button>
       </p>
 
-      <input 
+      <input
         v-model="todoText"
-        type="text" 
+        type="text"
         placeholder="Пункт задания"
       >
 
-      <button 
+      <button
         class="add-container__task-form__btn ml-5"
         @click.prevent="addTodoText(previewTask.todos), savePreviewToDb()"
       >
@@ -109,7 +109,7 @@ export default {
   mixins: [
       addToDo,
       checkCoincidence,
-      notifyShow, 
+      notifyShow,
       randomNumMixin
   ],
   components: {
@@ -138,7 +138,7 @@ export default {
     },
     cleanPreview () {
       this.previewTask.taskName = null,
-      this.previewTask.taskId = '', 
+      this.previewTask.taskId = '',
       this.previewTask.todos = [],
       this.previewTask.done = false
       this.previewTask.editState = false,
@@ -173,7 +173,7 @@ export default {
 
       if (this.checkCoincidence(this.tasks, this.taskName, 'taskName')) {
         this.notify_show('Задание с таким именем уже существует!', 'ERROR:', 'error')
-      } 
+      }
 
       if (!this.checkCoincidence(this.tasks, this.taskName, 'taskName') && this.taskName.length) {
         this.previewTask.taskName = this.taskName
@@ -181,7 +181,7 @@ export default {
         tasksLocalForage.setItem('previewTaskLocalForage', this.$store.getters.preview_task_getter)
           .catch(err => console.error(err))
         this.taskName = ''
-      } 
+      }
     },
     ...mapActions([
       'addTask'
@@ -220,6 +220,33 @@ button, input[type=text] {
     &__btn:hover {
       background-color: transparent;
       border: 1px solid black;
+    }
+  }
+}
+
+@media (max-width: 500px) {
+  .add-bar {
+    button {
+      min-width: 100px;
+    }
+  }
+}
+
+.add-container {
+  &__task-form{
+    text-align: center;
+
+    button, input[type=text] {
+      margin-left: 0px;
+      min-width: 180px;
+    }
+
+    button {
+      margin-top: 5px;
+    }
+
+    button:first-child {
+      margin-bottom: 10px;
     }
   }
 }

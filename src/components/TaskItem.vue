@@ -1,21 +1,21 @@
 <template>
 <div>
-  <div 
+  <div
     class="task-list"
   >
-    <div 
+    <div
       :class="this.preview ? 'task-list__task-item preview-mode' : 'task-list__task-item done-mode'"
     >
-      <div 
+      <div
         class="task-list__task-item__actions"
         v-if="this.task.taskId"
       >
         <div>
           <h3>
             <p>
-              <input 
+              <input
                 v-model="this.isTaskDone"
-                type="checkbox" 
+                type="checkbox"
                 disabled
               >
               {{!this.task.taskNameEditState ? this.task.taskName : 'в редакции'}}
@@ -23,17 +23,19 @@
           </h3>
         </div>
 
-        <div>
-          <router-link 
+        <div
+            class="task-list__task-item__actions__icons"
+        >
+          <router-link
             :to="{name: 'EditTaskPage', params: {taskId: this.task.taskId, taskView: this.preview ? 'preview' : 'task'}}"
           >
-            <i 
+            <i
               class="fa-solid fa-pen"
             >
             </i>
           </router-link>
 
-          <i 
+          <i
             :class="!this.preview ? 'fa-solid fa-trash' : 'fa-solid fa-ban'"
             @click="changeModalState"
           >
@@ -42,29 +44,33 @@
       </div>
 
     <ul>
-      <li 
-        v-for="todo in this.task.todos" 
+      <li
+        v-for="todo in this.task.todos"
         :key="todo.id"
       >
-      <!-- dublicated keys - вполне возможно! -->
-        <input 
-          type="checkbox" 
-          disabled 
+      <!-- duplicated keys - вполне возможно! -->
+        <input
+          type="checkbox"
+          disabled
           v-model="todo.done"
         >
-        {{!todo.editState ? todo.todoText : 'в редакции'}}
-        {{todo}}
+          <span
+            class="todoText"
+          >
+            {{!todo.editState ? todo.todoText : 'в редакции'}}
+            {{todo}}
+          </span>
       </li>
     </ul>
 
     </div>
   </div>
 
-  <ModalWindow 
+  <ModalWindow
     v-if="this.showModalState"
     :text="this.$store.state.modalText"
-    @close="changeModalState" 
-    @confirm="deleteTask" 
+    @close="changeModalState"
+    @confirm="deleteTask"
   />
 </div>
 </template>
@@ -193,6 +199,10 @@ a, i:hover {
       i {
         margin: 5px;
       }
+
+      &__icons {
+        min-width: 50px;
+      }
     }
   }
 }
@@ -203,6 +213,26 @@ a, i:hover {
 
 .done-mode {
   background-color: aquamarine;
+}
+
+@media (max-width: 500px) {
+  .task-list {
+    &__task-item {
+      &__actions {
+        h3 {
+          font-size: 16px;
+        }
+      }
+    }
+  }
+
+  .todoText {
+    font-size: 12px;
+  }
+}
+
+p {
+  word-break: break-all;
 }
 
 </style>

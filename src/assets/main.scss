@@ -10,7 +10,7 @@
 }
 
 // Margins
-// 
+//
 
 // Margins-left
 .ml-5 {
@@ -23,7 +23,7 @@
 }
 
 // Vue-notification styles
-// 
+//
 
 .vue-notification-template {
 
@@ -63,3 +63,12 @@
     }
 }
 }
+
+@media (max-width: 500px) {
+    .vue-notification-template {
+        &.my-notification {
+            font-size: 10px;
+        }
+    }
+}
+

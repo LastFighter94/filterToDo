@@ -3,13 +3,13 @@
       class="nav-bar"
     >
       <h2>
-        <span 
+        <span
           v-if="this.$route.name !== 'EditTaskPage'"
         >
           {{this.$route.name}}
         </span>
 
-        <span 
+        <span
           v-if="this.$route.name === 'EditTaskPage'"
         >
           Edit {{this.$route.params.taskView}}
@@ -33,6 +33,22 @@ export default {
   background-color: rgb(127, 163, 255);
   padding: 10px;
   margin-bottom: 20px;
+}
+
+@media (max-width: 500px) {
+  .nav-bar {
+    h2 {
+      font-size: 20px;
+    }
+  }
+}
+
+@media (max-width: 300px) {
+  .nav-bar {
+    h2 {
+      font-size: 15px;
+    }
+  }
 }
 
 </style>

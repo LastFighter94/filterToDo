@@ -4,7 +4,7 @@
 
     <router-view/>
 
-    <notifications position="top right" classes="my-notification"/>
+      <notifications position="top right" classes="my-notification" :width="150"/>
   </div>
 </template>
 

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="wrapper">
     <AddTaskForm/>
 
     <div
@@ -43,7 +43,7 @@ export default {
       tasksLocalForage.getItem('tasksLocalForage')
       .then(res => {
         if (!res) {
-          return 
+          return
         } else {
           this.$store.state.tasks = res
         }
@@ -54,7 +54,7 @@ export default {
       tasksLocalForage.getItem('previewTaskLocalForage')
       .then(res => {
         if (!res) {
-          return 
+          return
         } else {
           this.$store.state.previewTask = res
         }
@@ -71,6 +71,10 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+
+.wrapper {
+  min-width: 220px;
+}
 
 </style>
 
