@@ -4,7 +4,7 @@ export default {
       this.$notify({
       title: title_text,
       text: notify_text,
-      duration: 3000,
+      duration: 300000,
       type: show_type
     })
     },

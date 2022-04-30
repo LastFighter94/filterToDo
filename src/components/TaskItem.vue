@@ -58,7 +58,6 @@
             class="todoText"
           >
             {{!todo.editState ? todo.todoText : 'в редакции'}}
-            {{todo}}
           </span>
       </li>
     </ul>
