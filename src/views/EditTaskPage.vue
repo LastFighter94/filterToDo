@@ -1,7 +1,7 @@
 <template>
 <div>
   <div class="wrapper">
-    <div 
+    <div
       class="edit-tool-bar"
     >
       <EditToolBar
@@ -13,12 +13,12 @@
       class="edit-bar"
     >
 
-      <div 
+      <div
         class="edit-bar__task-name"
       >
         <div>
 
-          <div 
+          <div
             :class="this.taskView === 'preview' ? 'edit-bar__task-name__actions preview-mode' : 'edit-bar__task-name__actions done-mode'"
           >
             <div
@@ -26,12 +26,13 @@
             >
               <h3>
                 <p>
-                  <input 
-                    type="checkbox" 
-                    disabled
+                  <input
+                    type="checkbox"
+                    :disabled="this.taskEdit.todos.length ? true : false"
                     v-model="taskEdit.done"
+                    @change="saveDataToDb()"
                   >
-                  {{this.taskEdit.taskName}} 
+                  {{this.taskEdit.taskName}}
                 </p>
               </h3>
             </div>
@@ -39,13 +40,13 @@
             <div
               class="edit-bar__task-name__actions__icons"
             >
-              <i 
+              <i
                 :class="taskEdit.taskNameEditState ? 'fa-solid fa-floppy-disk' : 'fa-solid fa-pen'"
                 @click="taskEdit.taskNameEditState ? saveTaskNameChanges(taskEdit) : editTaskNameState(taskEdit)"
               >
               </i>
 
-              <i 
+              <i
                 :class="this.taskView === 'task' ? 'fa-solid fa-trash' : 'fa-solid fa-ban'"
                 @click="changeModalState"
               >
@@ -53,7 +54,7 @@
             </div>
           </div>
 
-          <div 
+          <div
             :style="taskEdit.taskNameEditState ? 'display:flex' : 'display: none'"
             class="editBar"
           >
@@ -65,14 +66,14 @@
         </div>
       </div>
 
-      <div 
+      <div
         :class="this.taskView === 'preview' ? 'edit-bar__task-todo preview-mode' : 'edit-bar__task-todo done-mode'"
       >
         <div
           v-for="todo in taskEdit.todos"
           :key="todo.id"
         >
-          <div 
+          <div
             class="edit-bar__task-todo__actions"
           >
             <div
@@ -80,9 +81,9 @@
             >
               <h4>
                 <p>
-                  <input 
+                  <input
                     v-model="todo.done"
-                    type="checkbox" 
+                    type="checkbox"
                     @change="checkIsAllDone"
                   >
                   {{todo.todoText}}
@@ -93,13 +94,13 @@
             <div
               class="edit-bar__task-todo__actions__icons"
             >
-              <i 
+              <i
                 :class="todo.editState ? 'fa-solid fa-floppy-disk' : 'fa-solid fa-pen'"
                 @click="todo.editState ? saveToDoChanges(todo) : editToDoState(todo)"
               >
               </i>
 
-              <i 
+              <i
                 class="fa-solid fa-trash"
                 @click="deleteToDo(todo)"
               >
@@ -107,12 +108,12 @@
             </div>
           </div>
 
-          <div 
+          <div
             class="editBar"
             :style="todo.editState ? 'display:flex' : 'display: none'"
           >
-            <textarea 
-              v-model="todo.todoText"
+            <textarea
+              v-model="newTodoText"
             >
             </textarea>
           </div>
@@ -120,24 +121,24 @@
       </div>
     </div>
 
-    <div 
+    <div
       class="add-todo"
     >
       <div>
-        <input 
-          type="text" 
+        <input
+          type="text"
           placeholder="Добавить еще пункт"
           v-model="todoText"
           >
       </div>
 
       <div>
-        <button 
-          content="Добавить еще подпункт" 
+        <button
+          content="Добавить еще подпункт"
           v-tippy="{ placement : 'bottom' }"
           @click.prevent="addTodoText(taskEdit.todos), checkIsAllDone()"
         >
-            <i 
+            <i
               class="fa-solid fa-plus"
             >
             </i>
@@ -146,14 +147,14 @@
     </div>
   </div>
 
-  <ModalWindow 
+  <ModalWindow
     v-if="this.showModalState"
     :text="this.$store.state.modalText"
-    @close="changeModalState" 
-    @confirm="deleteTask" 
+    @close="changeModalState"
+    @confirm="deleteTask"
   />
 
-  <!-- 
+  <!--
     Костыль модального окна на "отмену всех действий" - еще одна модалка - рабочий вариант, однако костыльный
     1) при нажатии на "отмена всех действий" - передаем в v-if data отображения "костыля" true
     2) на emit "закрытие" окна вешаем тот тот же метод
@@ -177,7 +178,7 @@
 
 
     !!! отмену действий можно реализовать следующим образом - это понятно и легко - заметка остается
-    - при входе в данный компонент, неважно - редакция "preview" или "task" 
+    - при входе в данный компонент, неважно - редакция "preview" или "task"
     - сразу копируем данное задание в LocalForage, ключ в DB назовем, например, "task_before_edit"
     - создаем метод, который будет возвращать этот объект - cancelTaskEditing()
   -->
@@ -212,13 +213,14 @@ export default {
       taskId: this.$route.params.taskId,
       taskView: this.$route.params.taskView,
       newTaskName: '',
+      newTodoText: '',
       showModalState: false
     }
   },
   mixins: [
       addToDo,
       checkCoincidence,
-      notifyShow, 
+      notifyShow,
       randomNumMixin
   ],
   created () {
@@ -264,8 +266,6 @@ export default {
     },
     deleteTask () {
       if (this.taskView !== 'preview') {
-        console.log('Are you sure?')
-        console.log('delete task')
 
         const index = this.tasks.findIndex(t => t === this.taskEdit);
         this.tasks.splice(index, 1);
@@ -277,9 +277,6 @@ export default {
             })
           .catch(err => console.error(err))
       } else {
-        console.log('Are you sure?')
-        console.log('delete preview')
-
         this.$store.state.previewTask.taskName = null
         this.$store.state.previewTask.taskId = ''
         this.$store.state.previewTask.todos = []
@@ -299,9 +296,20 @@ export default {
       tasksLocalForage.getItem('tasksLocalForage')
       .then(res => {
         if (!res) {
-          return 
+          return
         } else {
           this.$store.state.tasks = res
+        }
+        return res
+      })
+      .catch(err => console.log(err))
+
+      tasksLocalForage.getItem('previewTaskLocalForage')
+      .then(res => {
+        if (!res) {
+          return
+        } else {
+          this.$store.state.previewTask = res
         }
         return res
       })
@@ -321,8 +329,10 @@ export default {
       this.saveDataToDb()
     },
     checkIsSomeEdit () {
-      this.taskEdit.editState = this.someEdit
-      this.saveDataToDb()
+      if (this.taskEdit.todos.length) {
+        this.taskEdit.editState = this.someEdit
+        this.saveDataToDb()
+      }
     },
     randomId (key) {
       return String(this.randomNumMixin(1,100)) + key.toUpperCase().slice(0,30) + String(this.randomNumMixin(1,100))
@@ -332,21 +342,25 @@ export default {
       this.saveDataToDb()
     },
     saveTaskNameChanges (task) {
-      // Если нажимаем редактировать имя задания и ничего не изменяем - не выводить ошибку "задание с таким именем уже существует!" - делать проверку на все задания кроме того, внутри которого мы находимся - таким образом можно будет сохранить схему с v-model, которая была до этого
       if (!this.newTaskName.length) {
         this.notify_show('Добавьте текст задания', 'ERROR:', 'error')
       }
 
-      if (this.checkCoincidence(this.tasks, this.newTaskName, 'taskName')) {
-        this.notify_show('Задание с таким именем уже существует!', 'ERROR:', 'error')
-      } 
+      const index = this.tasks.findIndex(taskExist => taskExist === task);
 
-      if (!this.checkCoincidence(this.tasks, this.newTaskName, 'taskName') && this.newTaskName.length) {
+      let existingTasks = this.tasks.slice(0)
+      existingTasks.splice(index, 1);
+
+      if (this.checkCoincidence(existingTasks, this.newTaskName, 'taskName')) {
+        this.notify_show('Задание с таким именем уже существует!', 'ERROR:', 'error')
+      }
+
+      if (!this.checkCoincidence(existingTasks, this.newTaskName, 'taskName') && this.newTaskName.length) {
         task.taskNameEditState = !task.taskNameEditState
         task.taskName = this.newTaskName
         this.saveDataToDb()
         this.notify_show('Имя задания отредактировано!', 'SUCCESS:', 'success')
-      } 
+      }
     },
     // Сделать проверку на совпадение текста todo в данном задании! - с сохранением v-model
     editToDoState (todo) {
@@ -354,22 +368,31 @@ export default {
         this.checkIsSomeEdit()
     },
     saveToDoChanges (todo) {
-      if (!todo.todoText.length) {
+      if (!this.newTodoText.length) {
         this.notify_show('Пожалуйста - добавьте текст пункта', 'ERROR:', 'error')
-      } else {
-        todo.editState = !todo.editState
-        this.checkIsSomeEdit()
-        this.notify_show('Пункт отредактирован!', 'SUCCESS:', 'success')
+      }
+
+      const index = this.taskEdit.todos.findIndex(todoExist => todoExist === todo);
+
+      let existingTodos = this.taskEdit.todos.slice(0)
+      existingTodos.splice(index, 1);
+
+      if (this.checkCoincidence(existingTodos, this.newTodoText, 'todoText')) {
+        this.notify_show('Пункт с таким именем уже существует!', 'ERROR:', 'error')
+      }
+
+      if (!this.checkCoincidence(existingTodos, this.newTodoText, 'todoText') && this.newTodoText.length) {
+      todo.editState = !todo.editState
+      todo.todoText = this.newTodoText
+      this.checkIsSomeEdit()
+      this.notify_show('Пункт отредактирован!', 'SUCCESS:', 'success')
       }
     },
     deleteToDo (todo) {
       const index = this.taskEdit.todos.findIndex(td => td === todo);
       this.taskEdit.todos.splice(index, 1);
 
-      // Вопрос в том - какое состояние задавать Task - если у него совершенно не остается Todos
-      // Сейчас при удалении всех Todos - Task будет считать себя done = true если оставить this.checkIsAllDone() и done = false не прописывать checkIsAllDone()
-
-      // this.checkIsAllDone()
+      this.checkIsAllDone()
 
       this.saveDataToDb()
       console.log('Delete ToDo', todo)
@@ -416,7 +439,7 @@ i {
 
       &__icons {
         min-width: 50px;
-        
+
         i {
           color: rgba(0, 0, 0, 0.5);
         }

@@ -117,8 +117,6 @@ export default {
     // здесь частично дублирующаяся логика (этот рабочий момент в концепции похож на тот что сверху в примечании)
     deleteTask () {
       if (!this.preview) {
-        console.log('Are you sure?')
-        console.log('delete task')
 
         const index = this.tasks.findIndex(t => t === this.task);
         this.tasks.splice(index, 1);
@@ -126,9 +124,6 @@ export default {
         tasksLocalForage.setItem('tasksLocalForage', this.$store.getters.tasks_getter)
           .catch(err => console.error(err))
       } else {
-        console.log('Are you sure?')
-        console.log('delete preview')
-
         this.previewTask.taskName = null
         this.previewTask.taskId = ''
         this.previewTask.todos = []
@@ -147,13 +142,6 @@ export default {
     },
     tasks () {
       return this.$store.getters.tasks_getter
-    },
-    taskToDelete () {
-      if (this.taskView === 'preview') {
-        return this.previewTask
-      } else {
-        return this.tasks.find(task => task.taskId === this.task.taskId)
-      }
     },
     isTaskDone () {
       return this.task.done

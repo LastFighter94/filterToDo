@@ -15,6 +15,9 @@
     </button>
   </div>
 
+  <transition
+      name="fade"
+  >
   <div
     class="add-container"
     v-if="showForm"
@@ -25,11 +28,10 @@
     <form
       @submit.prevent="submit_task"
     >
-
       <button
         v-if="previewTask.taskName && previewTask.todos.length && !previewTask.editState && !previewTask.taskNameEditState"
         type="submit"
-        class="add-container__task-form__btn mb-5"
+        class="add-container__task-form__btn"
       >
         Отправить задание
       </button>
@@ -42,7 +44,7 @@
       >
 
       <button
-        class="add-container__task-form__btn ml-5 mb-5"
+        class="add-container__task-form__btn"
         @click.prevent="addTaskName"
       >
         <span
@@ -59,7 +61,7 @@
       >
 
       <button
-        class="add-container__task-form__btn ml-5"
+        class="add-container__task-form__btn"
         @click.prevent="addTodoText(previewTask.todos), savePreviewToDb()"
       >
         <span
@@ -67,16 +69,20 @@
         >
         </span>
       </button>
-
     </form>
     </div>
 
+    <transition
+        name="fade"
+    >
     <TaskItem
       v-if="previewTask.taskName || previewTask.todos.length"
       :task="previewTask"
       :preview="true"
     />
+    </transition>
   </div>
+  </transition>
 </div>
 </template>
 
@@ -200,8 +206,9 @@ export default {
 
 button, input[type=text] {
   padding: 5px;
-  min-width: 200px;
+  min-width: 160px;
   border: 1px solid transparent;
+  margin: 2px;
 }
 
 .add-container {
@@ -210,6 +217,7 @@ button, input[type=text] {
 
   &__task-form {
     background-color: rgb(127, 163, 255);
+    text-align: center;
     padding: 10px;
     margin: 10px;
 
@@ -220,33 +228,6 @@ button, input[type=text] {
     &__btn:hover {
       background-color: transparent;
       border: 1px solid black;
-    }
-  }
-}
-
-@media (max-width: 500px) {
-  .add-bar {
-    button {
-      min-width: 100px;
-    }
-  }
-}
-
-.add-container {
-  &__task-form{
-    text-align: center;
-
-    button, input[type=text] {
-      margin-left: 0px;
-      min-width: 180px;
-    }
-
-    button {
-      margin-top: 5px;
-    }
-
-    button:first-child {
-      margin-bottom: 10px;
     }
   }
 }

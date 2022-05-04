@@ -2,6 +2,10 @@
   <div class="wrapper">
     <AddTaskForm/>
 
+    <transition-group
+        name="fade"
+        mode="out-in"
+    >
     <div
       v-for="task in tasks"
       :key="task.taskId"
@@ -10,6 +14,7 @@
       :task="task"
     />
     </div>
+    </transition-group>
   </div>
 </template>
 
@@ -71,7 +76,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-
 .wrapper {
   min-width: 220px;
 }

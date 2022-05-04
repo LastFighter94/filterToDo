@@ -2,7 +2,12 @@
   <div>
     <NavBar/>
 
-    <router-view/>
+    <transition
+        name="fade"
+        mode="out-in"
+    >
+      <router-view/>
+    </transition>
 
       <notifications position="top right" classes="my-notification" :width="this.notifyWidth"/>
   </div>
@@ -36,14 +41,11 @@ export default {
           return this.notifyWidth
         }
     }
-  },
-  computed: {
-
   }
 }
 </script>
 
 <style lang="scss">
-@import "assets/main.scss";
+@import "assets/_main";
 
 </style>
