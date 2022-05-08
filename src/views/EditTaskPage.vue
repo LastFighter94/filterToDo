@@ -6,6 +6,8 @@
     >
       <EditToolBar
         @changeModalState="changeModalState"
+        :taskToSend="this.taskEdit"
+        :canCancelEditing="this.canCancelEditing"
       />
     </div>
 
@@ -30,7 +32,7 @@
                     type="checkbox"
                     :disabled="this.taskEdit.todos.length ? true : false"
                     v-model="taskEdit.done"
-                    @change="saveDataToDb()"
+                    @change="saveDataToDb(), writeHistory('change task-done')"
                   >
                   {{this.taskEdit.taskName}}
                 </p>
@@ -48,7 +50,7 @@
 
               <i
                 :class="this.taskView === 'task' ? 'fa-solid fa-trash' : 'fa-solid fa-ban'"
-                @click="changeModalState"
+                @click="changeModalState('delete')"
               >
               </i>
             </div>
@@ -84,7 +86,7 @@
                   <input
                     v-model="todo.done"
                     type="checkbox"
-                    @change="checkIsAllDone"
+                    @change="checkIsAllDone, writeHistory('change todo-done')"
                   >
                   {{todo.todoText}}
                 </p>
@@ -129,6 +131,7 @@
           type="text"
           placeholder="Добавить еще пункт"
           v-model="todoText"
+          @keyup.enter="addTodoText(taskEdit.todos), checkIsAllDone(), writeHistory('add todo')"
           >
       </div>
 
@@ -136,7 +139,7 @@
         <button
           content="Добавить еще подпункт"
           v-tippy="{ placement : 'bottom' }"
-          @click.prevent="addTodoText(taskEdit.todos), checkIsAllDone()"
+          @click.prevent="addTodoText(taskEdit.todos), checkIsAllDone(), writeHistory('add todo')"
         >
             <i
               class="fa-solid fa-plus"
@@ -151,37 +154,8 @@
     v-if="this.showModalState"
     :text="this.$store.state.modalText"
     @close="changeModalState"
-    @confirm="deleteTask"
+    @confirm="changeTask"
   />
-
-  <!--
-    Костыль модального окна на "отмену всех действий" - еще одна модалка - рабочий вариант, однако костыльный
-    1) при нажатии на "отмена всех действий" - передаем в v-if data отображения "костыля" true
-    2) на emit "закрытие" окна вешаем тот тот же метод
-
-    3) на emit "подтверждение" вешаем "отмена всех действий"
-
-
-
-    *** Вариант "без костыля" *** - пора заканчивать этот проект, он итак отнимает достаточно много времени
-
-    1) при нажатии на "отмена всех действий" - передаем в v-if data отображения "костыля" true
-    2) а также передаем в data true/false состояний методов, которые мы будем выполнять по "подтверждению действия"
-    Модальное окно принимает в себя
-    - текст модального окна
-    - эмит на закрытие модального окна
-    - подтверждение действия ("отмена всех действий" или "удалить task || preview_task")
-
-    -- в подтверждение действия мы можем вернуть метод, который, в зависимости от data будет возвращать подтверждение действия cancelTaskEditing() или deleteTask()
-    -- после чего будет возвращать переданные data true/false состояния методов в первоночальное состояние/сбрасывать его, как будет удобно и логично
-
-
-
-    !!! отмену действий можно реализовать следующим образом - это понятно и легко - заметка остается
-    - при входе в данный компонент, неважно - редакция "preview" или "task"
-    - сразу копируем данное задание в LocalForage, ключ в DB назовем, например, "task_before_edit"
-    - создаем метод, который будет возвращать этот объект - cancelTaskEditing()
-  -->
 
 </div>
 </template>
@@ -214,7 +188,8 @@ export default {
       taskView: this.$route.params.taskView,
       newTaskName: '',
       newTodoText: '',
-      showModalState: false
+      showModalState: false,
+      wantCancelEditing: false
     }
   },
   mixins: [
@@ -224,9 +199,31 @@ export default {
       randomNumMixin
   ],
   created () {
-    this.getDataFromDb()
+    // проверка на наличие taskId - если такового нет, то redirect на NotFound
+    let checkId = this.tasks.find(t => t.taskId === this.taskId)
+
+    if (checkId === undefined) {
+      this.routerPush({ name: 'NotFound' })
+    }
+
+    tasksLocalForage.setItem('taskBeforeEdit', this.taskEdit)
+        .then(this.getDataFromDb)
+        .then(this.setHistory)
+        .catch(err => console.error(err))
   },
   computed: {
+    history () {
+      return this.$store.getters.history_getter
+    },
+    canCancelEditing () {
+      // два объекта не равны друг другу даже если их свойства полностью одинаковы
+      // поэтому прибегаем к такому методу сравнения
+      if ((JSON.stringify(this.taskBeforeEdit) == JSON.stringify(this.taskEdit))) {
+        return false
+      } else {
+        return true
+      }
+    },
     allDone () {
       if (this.taskEdit.todos.some(td => td.done === false)) {
         return false
@@ -250,49 +247,97 @@ export default {
     taskEdit () {
       if (this.taskView === 'preview') {
         return this.previewTask
-      } else {
+      } else if (this.taskView === 'task') {
         return this.tasks.find(task => task.taskId === this.taskId)
+      } else {
+        return this.routerPush({ name: 'NotFound' })
       }
+    },
+    taskBeforeEdit () {
+      return this.$store.state.taskBeforeEdit
     }
   },
   methods: {
-    changeModalState(){
-      if (this.taskView !== 'preview') {
-        this.$store.state.modalText = 'УВЕРЕНЫ ЧТО ХОТИТЕ УДАЛИТЬ ЗАДАНИЕ?!'
-      } else {
-        this.$store.state.modalText = 'УВЕРЕНЫ ЧТО ХОТИТЕ УДАЛИТЬ ПРЕВЬЮ?!'
+    setHistory () {
+      tasksLocalForage.setItem('history', this.history)
+          .catch(err => console.error(err))
+    },
+    routerPush (data) {
+      this.$router.push({ ...data })
+    },
+    changeModalState(howToChangeTask){
+      if (!howToChangeTask || howToChangeTask === 'delete') {
+        if (this.taskView !== 'preview') {
+          this.$store.state.modalText = 'УВЕРЕНЫ ЧТО ХОТИТЕ УДАЛИТЬ ЗАДАНИЕ?!'
+        } else {
+          this.$store.state.modalText = 'УВЕРЕНЫ ЧТО ХОТИТЕ УДАЛИТЬ ПРЕВЬЮ?!'
+        }
+        this.wantCancelEditing = false
+      } else if (howToChangeTask === 'cancel-editing') {
+        this.$store.state.modalText = 'УВЕРЕНЫ ЧТО ХОТИТЕ ОТМЕНИТЬ ВСЕ ДЕЙСТВИЯ С РЕДАКЦИЕЙ ЭТОГО ЗАДАНИЯ?!'
+        this.wantCancelEditing = true
       }
+
       this.showModalState = !this.showModalState
     },
-    deleteTask () {
-      if (this.taskView !== 'preview') {
+    cancelEditing () {
+      console.log('вы отменили все редактирование')
 
-        const index = this.tasks.findIndex(t => t === this.taskEdit);
-        this.tasks.splice(index, 1);
+      this.taskEdit.taskNameEditState = this.taskBeforeEdit.taskNameEditState
+      this.taskEdit.editState = this.taskBeforeEdit.editState
+      this.taskEdit.taskName = this.taskBeforeEdit.taskName
+      this.taskEdit.done = this.taskBeforeEdit.done
 
-        tasksLocalForage.setItem('tasksLocalForage', this.$store.getters.tasks_getter)
-          .then(res => {
-            this.$router.push({ name: 'TaskListPage' })
-            return res
-            })
-          .catch(err => console.error(err))
+      this.taskEdit.todos = JSON.parse(JSON.stringify(this.taskBeforeEdit.todos))
+
+      this.saveDataToDb()
+    },
+    changeTask () {
+      // delete && cancel editing task
+
+      if (this.wantCancelEditing) {
+        this.cancelEditing()
       } else {
-        this.$store.state.previewTask.taskName = null
-        this.$store.state.previewTask.taskId = ''
-        this.$store.state.previewTask.todos = []
-        this.$store.state.previewTask.done = false
-        this.$store.state.previewTask.editState = false
-        this.$store.state.previewTask.taskNameEditState = false
+        // delete task
+        if (this.taskView !== 'preview') {
+          const index = this.tasks.findIndex(t => t === this.taskEdit);
+          this.tasks.splice(index, 1);
 
-        tasksLocalForage.setItem('previewTaskLocalForage', this.$store.getters.preview_task_getter)
-          .then(res => {
-            this.$router.push({ name: 'TaskListPage' })
-            return res
-            })
-          .catch(err => console.error(err))
+          tasksLocalForage.setItem('tasksLocalForage', this.$store.getters.tasks_getter)
+              .then(res => {
+                this.$router.push({ name: 'TaskListPage' })
+                return res
+              })
+              .catch(err => console.error(err))
+        } else {
+          this.$store.state.previewTask.taskName = null
+          this.$store.state.previewTask.taskId = ''
+          this.$store.state.previewTask.todos = []
+          this.$store.state.previewTask.done = false
+          this.$store.state.previewTask.editState = false
+          this.$store.state.previewTask.taskNameEditState = false
+
+          tasksLocalForage.setItem('previewTaskLocalForage', this.$store.getters.preview_task_getter)
+              .then(res => {
+                this.$router.push({ name: 'TaskListPage' })
+                return res
+              })
+              .catch(err => console.error(err))
+        }
       }
     },
     getDataFromDb () {
+      tasksLocalForage.getItem('taskBeforeEdit')
+      .then(res => {
+        if (!res) {
+          return
+        } else {
+          this.$store.state.taskBeforeEdit = res
+        }
+        return res
+      })
+      .catch(err => console.log(err))
+
       tasksLocalForage.getItem('tasksLocalForage')
       .then(res => {
         if (!res) {
@@ -340,6 +385,7 @@ export default {
     editTaskNameState (task) {
       task.taskNameEditState = !task.taskNameEditState
       this.saveDataToDb()
+      this.writeHistory('edit task name')
     },
     saveTaskNameChanges (task) {
       if (!this.newTaskName.length) {
@@ -360,12 +406,15 @@ export default {
         task.taskName = this.newTaskName
         this.saveDataToDb()
         this.notify_show('Имя задания отредактировано!', 'SUCCESS:', 'success')
+
+        this.writeHistory('save new task-name')
       }
     },
-    // Сделать проверку на совпадение текста todo в данном задании! - с сохранением v-model
     editToDoState (todo) {
         todo.editState = !todo.editState
         this.checkIsSomeEdit()
+
+        this.writeHistory('edit todo')
     },
     saveToDoChanges (todo) {
       if (!this.newTodoText.length) {
@@ -386,16 +435,25 @@ export default {
       todo.todoText = this.newTodoText
       this.checkIsSomeEdit()
       this.notify_show('Пункт отредактирован!', 'SUCCESS:', 'success')
+
+      this.writeHistory('save todo')
       }
     },
     deleteToDo (todo) {
       const index = this.taskEdit.todos.findIndex(td => td === todo);
       this.taskEdit.todos.splice(index, 1);
 
+      this.writeHistory('delete todo')
+
       this.checkIsAllDone()
 
       this.saveDataToDb()
+
       console.log('Delete ToDo', todo)
+    },
+    writeHistory (action) {
+      this.history.push([JSON.parse(JSON.stringify(this.taskEdit)), action])
+      this.setHistory()
     }
   }
 }
@@ -466,25 +524,6 @@ i {
   padding-top: 10px;
 }
 
-@media (max-width: 500px) {
-  .edit-bar {
-    &__task-name, &__task-todo {
-      &__actions {
-        padding: 5px;
-
-        &__text {
-          font-size: 10px;
-        }
-
-        &__icons {
-          font-size: 10px;
-          min-width: 40px;
-        }
-      }
-    }
-  }
-}
-
 input[type=text] {
   margin: 5px;
   padding: 2px;
@@ -515,6 +554,23 @@ button:hover {
 }
 
 @media (max-width: 500px) {
+  .edit-bar {
+    &__task-name, &__task-todo {
+      &__actions {
+        padding: 5px;
+
+        &__text {
+          font-size: 10px;
+        }
+
+        &__icons {
+          font-size: 10px;
+          min-width: 40px;
+        }
+      }
+    }
+  }
+
   button {
     min-width: 20px;
     min-height: 25px;

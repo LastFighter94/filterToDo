@@ -206,8 +206,18 @@ a, i:hover {
   .task-list {
     &__task-item {
       &__actions {
+        padding: 5px;
+
         h3 {
           font-size: 16px;
+        }
+
+        &__icons {
+          min-width: 40px;
+        }
+
+        i {
+          font-size: 10px;
         }
       }
     }
@@ -215,6 +225,22 @@ a, i:hover {
 
   .todoText {
     font-size: 12px;
+  }
+}
+
+@media (max-width: 300px) {
+  .task-list {
+    &__task-item {
+      &__actions {
+        h3 {
+          font-size: 13px;
+        }
+      }
+    }
+  }
+
+  .todoText {
+    font-size: 9px;
   }
 }
 

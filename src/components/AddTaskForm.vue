@@ -87,21 +87,22 @@
 </template>
 
 <script>
-import {mapActions} from 'vuex'
-
 import TaskItem from '@/components/TaskItem.vue'
 
 import addToDo from '../mixins/addToDo'
 import checkCoincidence from '../mixins/checkCoincidence'
 import notifyShow from '../mixins/notifyShow'
 import randomNumMixin from '../mixins/randomNumMixin'
+import addTaskToDb from "@/mixins/addTaskToDb"
 
+// импортировали этот код два раза - почему-то он невидим черещ mixin addTaskToDb
 import localforage from 'localforage'
 
 const tasksLocalForage = localforage.createInstance({
   name: 'DraftDB',
   storeName: 'tasksDraft'
 })
+// конец примечания
 
 export default {
   data () {
@@ -116,60 +117,27 @@ export default {
       addToDo,
       checkCoincidence,
       notifyShow,
-      randomNumMixin
+      randomNumMixin,
+      addTaskToDb
   ],
   components: {
     TaskItem
   },
   computed: {
-    previewTask () {
-      return this.$store.getters.preview_task_getter
-    },
     tasks () {
       return this.$store.getters.tasks_getter
     }
   },
   methods: {
-    saveDataToDb () {
-      tasksLocalForage.setItem('tasksLocalForage', this.$store.getters.tasks_getter)
-        .catch(err => console.error(err))
-    },
-    savePreviewToDb () {
-      tasksLocalForage.setItem('previewTaskLocalForage', this.$store.getters.preview_task_getter)
-        .catch(err => console.error(err))
-    },
     toggleAddTaskForm () {
       this.addTaskFormState = !this.addTaskFormState
       this.showForm = !this.showForm
-    },
-    cleanPreview () {
-      this.previewTask.taskName = null,
-      this.previewTask.taskId = '',
-      this.previewTask.todos = [],
-      this.previewTask.done = false
-      this.previewTask.editState = false,
-      this.previewTask.taskNameEditState = false
     },
     randomId (key) {
       return String(this.randomNumMixin(1,100)) + key.toUpperCase().slice(0,30) + String(this.randomNumMixin(1,100))
     },
     submit_task () {
-      this.addTask(
-        {
-          taskName: this.previewTask.taskName,
-          taskId: this.previewTask.taskId,
-          todos: this.previewTask.todos,
-          done: this.previewTask.done,
-          editState: this.previewTask.editState,
-          taskNameEditState: this.previewTask.taskNameEditState
-        }
-      )
-
-      this.notify_show('Пункт добавлен!', 'SUCCESS:', 'success')
-      this.cleanPreview()
-      this.saveDataToDb()
-      this.savePreviewToDb()
-
+      this.addTaskToDb(this.previewTask)
       this.toggleAddTaskForm()
     },
     addTaskName () {
@@ -188,10 +156,7 @@ export default {
           .catch(err => console.error(err))
         this.taskName = ''
       }
-    },
-    ...mapActions([
-      'addTask'
-    ])
+    }
   }
 }
 </script>
@@ -229,6 +194,17 @@ button, input[type=text] {
       background-color: transparent;
       border: 1px solid black;
     }
+  }
+}
+
+@media (max-width: 300px) {
+  .add-bar {
+    padding: 5px;
+  }
+
+  button, input[type=text] {
+    min-width: 120px;
+    font-size: 0.6em;
   }
 }
 

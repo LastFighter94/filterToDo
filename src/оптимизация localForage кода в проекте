@@ -1,0 +1,29 @@
+Компоненты, где используется localForage
+
+*** TaskListPage
+(импорт библиотеки)
+(создание instance в константу по имени tasksLocalForage)
+
+(
+created + getDataFromDb(), где мы возвращаем tasksLocalForage и previewTaskLocalForage во vuex
+this.$store.state.tasks = res
+$store.state.previewTask = res
+)
+
+*** EditTaskPage
+(импорт библиотеки)
+(создание instance в константу по имени tasksLocalForage)
+
+(
+created + getDataFromDb(), где мы возвращаем tasksLocalForage и previewTaskLocalForage во vuex
+this.$store.state.tasks = res
+$store.state.previewTask = res
+)
+
+Вверху идентичный функционал - практически полностью (EditTaskPage - добавляем taskBeforeEdit) - пока оставлю его как есть
+
+TaskItem - оставляем как есть
+
+EditToolBar и AddTaskForm - вынес дублирующийся код в mixin addTaskToDb - единственный косячный момент заключается в том, что в AddTaskForm два раза импортируется localForage
+
+todo сделать глобальный импорт localForage если это возможно

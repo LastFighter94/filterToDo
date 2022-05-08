@@ -6,14 +6,14 @@
         name="fade"
         mode="out-in"
     >
-    <div
-      v-for="task in tasks"
-      :key="task.taskId"
-    >
-    <TaskItem
-      :task="task"
-    />
-    </div>
+      <div
+        v-for="task in tasks"
+        :key="task.taskId"
+      >
+      <TaskItem
+        :task="task"
+      />
+      </div>
     </transition-group>
   </div>
 </template>
@@ -66,10 +66,6 @@ export default {
         return res
       })
       .catch(err => console.log(err))
-    },
-    saveDataToDb () {
-      tasksLocalForage.setItem('tasksLocalForage', this.$store.getters.tasks_getter)
-        .catch(err => console.error(err))
     }
   }
 }
@@ -77,7 +73,7 @@ export default {
 
 <style lang="scss" scoped>
 .wrapper {
-  min-width: 220px;
+  min-width: 160px;
 }
 
 </style>

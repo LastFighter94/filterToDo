@@ -8,7 +8,7 @@ export default new Vuex.Store({
     // modalText: '',
     previewTask: {
       taskName: null,
-      taskId: '', 
+      taskId: '',
       todos: [],
       done: false,
       editState: false,
@@ -17,7 +17,9 @@ export default new Vuex.Store({
     },
     tasks: [
 
-    ]
+    ],
+    taskBeforeEdit: null,
+    history: []
   },
   mutations: {
     addTask: (state, payload) => {
@@ -37,6 +39,9 @@ export default new Vuex.Store({
     },
     preview_task_getter: state => {
       return state.previewTask
-    }
+    },
+    history_getter: state => {
+      return state.history
+    },
   },
 })

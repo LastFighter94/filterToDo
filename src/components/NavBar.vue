@@ -33,7 +33,7 @@ export default {
   background-color: rgb(127, 163, 255);
   padding: 10px;
   margin-bottom: 20px;
-  min-width: 220px;
+  min-width: 160px;
 }
 
 @media (max-width: 500px) {

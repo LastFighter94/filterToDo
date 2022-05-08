@@ -2,10 +2,10 @@
   <div class="toolbar">
     <div>
       <button
-        content="Вернуться назад" 
+        content="Вернуться назад"
         v-tippy
       >
-        <i 
+        <i
           class="fa-solid fa-arrow-left"
           @click="goBack"
         >
@@ -15,66 +15,55 @@
 
     <div>
       <button
-        :content="this.$route.params.taskView !== 'preview' ? 'Удалить задание' : 'Отмена редактирования'" 
+        :content="this.$route.params.taskView !== 'preview' ? 'Удалить задание' : 'Отмена редактирования'"
         v-tippy
       >
-        <i 
+        <i
           :class="this.$route.params.taskView !== 'preview' ? 'fa-solid fa-trash' : 'fa-solid fa-ban'"
           @click="$emit('changeModalState')"
         >
         </i>
       </button>
 
-      <!-- 
-        При нажатии на кнопку - делать promise - вначале notify "успех"
-
-        Если preview_task, тогда делаем отправку задания как в AddTaskForm (здесь по-хорошему использовать vuex, чтобы обойтись без всяких emit и так далее)
-        Если task - тогда просто делаем redirect, потому что у нас итак данные сохраняются автоматически в LocalForage
-
-        далее redirect
-
-        Отложил задание на потом - логика его осуществления ясна и понятна
-      -->
-
-      <!-- <button
-        :content="this.$route.params.taskView !== 'preview' ? 'Сохранить задание' : 'Отправить задание'" 
+      <button
+        :content="this.$route.params.taskView !== 'preview' ? 'Сохранить задание' : 'Отправить задание'"
         v-tippy
       >
-        <i 
+        <i
           class="fa-solid fa-floppy-disk"
+          @click="sendTask"
         >
         </i>
-      </button> -->
+      </button>
 
-      <!-- 
-        Отложил задание на потом - логика его осуществления ясна и понятна 
-      -->
-
-      <!-- <button 
-        content="Отменить все" 
+      <button
+        v-if="this.$route.params.taskView !== 'preview'"
+        content="Отменить все"
+        :disabled="!this.canCancelEditing"
         v-tippy
       >
-        <i 
+        <i
           class="fa-solid fa-xmark"
+          @click="$emit('changeModalState', 'cancel-editing')"
         >
         </i>
-      </button> -->
+      </button>
 
-      <button 
-        content="Действие назад" 
+      <button
+        content="Действие назад"
         v-tippy
       >
-        <i 
+        <i
           class="fa-solid fa-rotate-left"
         >
         </i>
       </button>
 
-      <button 
-        content="Действие вперед" 
+      <button
+        content="Действие вперед"
         v-tippy
       >
-        <i 
+        <i
           class="fa-solid fa-rotate-right"
         >
         </i>
@@ -84,18 +73,41 @@
 </template>
 
 <script>
+import notifyShow from "@/mixins/notifyShow"
+import addTaskToDb from "@/mixins/addTaskToDb"
 
 export default {
   methods: {
     goBack () {
       this.$router.go(-1)
+    },
+    sendTask () {
+      if (this.$route.params.taskView !== 'preview') {
+        this.notify_show('Задание сохранено', 'SUCCESS:', 'success')
+        this.goBack()
+      } else {
+        this.addTaskToDb(this.taskToSend)
+        this.goBack()
+      }
+    }
+  },
+  mixins: [
+    notifyShow,
+    addTaskToDb
+  ],
+  props: {
+    taskToSend: {
+      type: Object
+    },
+    canCancelEditing: {
+      type: Boolean
     }
   }
 }
 </script>
 
 <style lang="scss" scoped>
-// По-хорошему надо установить новую версию vue-tool-tip и прописать кастомный адаптивный к @media стиль 
+// По-хорошему надо установить новую версию vue-tool-tip и прописать кастомный адаптивный к @media стиль
 // Потому что при сжатии экрана - tool-tip остается соразмерным изначальной версии и не сжимается
 
 .toolbar {
@@ -114,6 +126,15 @@ button {
   border: 1px solid transparent;
 }
 
+button:disabled,
+button[disabled],
+button:disabled:hover,
+button[disabled]:hover{
+  border: 1px solid #999999;
+  background-color: #cccccc;
+  color: #666666;
+}
+
 button:hover {
   background-color: transparent;
   border: 1px solid black;
@@ -124,6 +145,15 @@ button:hover {
     min-width: 20px;
     min-height: 20px;
     font-size: 8px;
+  }
+}
+
+@media (max-width: 300px) {
+  button {
+    min-width: 17px;
+    min-height: 17px;
+    font-size: 7px;
+    margin: 2px;
   }
 }
 

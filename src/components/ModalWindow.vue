@@ -48,8 +48,8 @@ export default {
       this.$emit('close')
     },
     confirm(){
-      this.close()
       this.$emit('confirm')
+      this.close()
     }
   }
 }
