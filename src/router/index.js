@@ -23,11 +23,6 @@ const routes = [
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: NotFound
-  },
-  {
-    path: '/edittaskpage/:pathMatch(.*)*',
-    name: 'NotFound',
-    component: NotFound
   }
 ]
 

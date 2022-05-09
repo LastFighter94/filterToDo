@@ -17,6 +17,7 @@ export default {
       if (!this.checkCoincidence(state, this.todoText, 'todoText') && this.todoText.length) {
         state.push({todoText: this.todoText, done: false, id: this.randomId(this.todoText), editState: false})
         this.todoText = ''
+        this.writeHistory('add todo')
       }
     }
   }

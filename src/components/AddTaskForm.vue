@@ -129,6 +129,10 @@ export default {
     }
   },
   methods: {
+    writeHistory() {
+      // заглушка - костыль на mixin AddToDo
+      return true
+    },
     toggleAddTaskForm () {
       this.addTaskFormState = !this.addTaskFormState
       this.showForm = !this.showForm

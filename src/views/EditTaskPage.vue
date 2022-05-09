@@ -6,8 +6,13 @@
     >
       <EditToolBar
         @changeModalState="changeModalState"
-        :taskToSend="this.taskEdit"
         :canCancelEditing="this.canCancelEditing"
+        :historyLength="historyLength"
+        :historyCurrentIndex="historyCurrentIndex"
+        :taskToSend="this.taskEdit"
+        @cleanHistoryAndGoBack="cleanHistoryAndGoBack"
+        @historyBack="testBack"
+        @historyForward="testForward"
       />
     </div>
 
@@ -86,7 +91,7 @@
                   <input
                     v-model="todo.done"
                     type="checkbox"
-                    @change="checkIsAllDone, writeHistory('change todo-done')"
+                    @change="checkIsAllDone(), writeHistory('change todo-done')"
                   >
                   {{todo.todoText}}
                 </p>
@@ -131,7 +136,7 @@
           type="text"
           placeholder="Добавить еще пункт"
           v-model="todoText"
-          @keyup.enter="addTodoText(taskEdit.todos), checkIsAllDone(), writeHistory('add todo')"
+          @keyup.enter="addTodoText(taskEdit.todos), checkIsAllDone()"
           >
       </div>
 
@@ -139,7 +144,7 @@
         <button
           content="Добавить еще подпункт"
           v-tippy="{ placement : 'bottom' }"
-          @click.prevent="addTodoText(taskEdit.todos), checkIsAllDone(), writeHistory('add todo')"
+          @click.prevent="addTodoText(taskEdit.todos), checkIsAllDone()"
         >
             <i
               class="fa-solid fa-plus"
@@ -189,7 +194,9 @@ export default {
       newTaskName: '',
       newTodoText: '',
       showModalState: false,
-      wantCancelEditing: false
+      wantCancelEditing: false,
+      moveBack: 0,
+      moveForward: 0
     }
   },
   mixins: [
@@ -202,8 +209,12 @@ export default {
     // проверка на наличие taskId - если такового нет, то redirect на NotFound
     let checkId = this.tasks.find(t => t.taskId === this.taskId)
 
-    if (checkId === undefined) {
+    if (checkId === undefined && this.taskView === 'task') {
       this.routerPush({ name: 'NotFound' })
+    //  косяк в том, что при обновлении страницы в состоянии taskView === 'task' идет redirect
+    //  на страницу 404, хотя это должно работать только в случае если пользователь
+    //  специально введет несуществующий id в адресе и нажмет enter
+    //  router-mistake
     }
 
     tasksLocalForage.setItem('taskBeforeEdit', this.taskEdit)
@@ -212,8 +223,14 @@ export default {
         .catch(err => console.error(err))
   },
   computed: {
+    moveBackAmount () {
+      return +this.moveBack
+    },
     history () {
       return this.$store.getters.history_getter
+    },
+    historyLength () {
+      return +this.$store.state.history.length
     },
     canCancelEditing () {
       // два объекта не равны друг другу даже если их свойства полностью одинаковы
@@ -255,10 +272,51 @@ export default {
     },
     taskBeforeEdit () {
       return this.$store.state.taskBeforeEdit
-    }
+    },
+    historyCurrentIndex () {
+      let result = this.historyLength - this.moveBack + this.moveForward - 1
+      if (result < 0) {
+        result = 0
+      }
+      return result
+    },
   },
   methods: {
-    setHistory () {
+    testBack () {
+      if (this.historyCurrentIndex === 0) {
+        console.log('уже некуда move back Але')
+      } else {
+        console.log('move back')
+        this.moveBack += 1
+
+        this.taskEdit.taskNameEditState = this.history[this.historyCurrentIndex][0].taskNameEditState
+        this.taskEdit.editState = this.history[this.historyCurrentIndex][0].editState
+        this.taskEdit.taskName = this.history[this.historyCurrentIndex][0].taskName
+        this.taskEdit.done = this.history[this.historyCurrentIndex][0].done
+
+        this.taskEdit.todos = JSON.parse(JSON.stringify(this.history[this.historyCurrentIndex][0].todos))
+
+        this.saveDataToDb()
+      }
+    },
+    testForward () {
+      if (this.historyCurrentIndex === this.historyLength - 1) {
+        console.log('уже некуда move forward Але')
+      } else {
+        console.log('move forward')
+        this.moveForward += 1
+
+        this.taskEdit.taskNameEditState = this.history[this.historyCurrentIndex][0].taskNameEditState
+        this.taskEdit.editState = this.history[this.historyCurrentIndex][0].editState
+        this.taskEdit.taskName = this.history[this.historyCurrentIndex][0].taskName
+        this.taskEdit.done = this.history[this.historyCurrentIndex][0].done
+
+        this.taskEdit.todos = JSON.parse(JSON.stringify(this.history[this.historyCurrentIndex][0].todos))
+
+        this.saveDataToDb()
+      }
+    },
+    recordHistory () {
       tasksLocalForage.setItem('history', this.history)
           .catch(err => console.error(err))
     },
@@ -283,14 +341,17 @@ export default {
     cancelEditing () {
       console.log('вы отменили все редактирование')
 
+      this.beforeEdit()
+      this.saveDataToDb()
+      this.cleanHistory()
+    },
+    beforeEdit () {
       this.taskEdit.taskNameEditState = this.taskBeforeEdit.taskNameEditState
       this.taskEdit.editState = this.taskBeforeEdit.editState
       this.taskEdit.taskName = this.taskBeforeEdit.taskName
       this.taskEdit.done = this.taskBeforeEdit.done
 
       this.taskEdit.todos = JSON.parse(JSON.stringify(this.taskBeforeEdit.todos))
-
-      this.saveDataToDb()
     },
     changeTask () {
       // delete && cancel editing task
@@ -309,6 +370,8 @@ export default {
                 return res
               })
               .catch(err => console.error(err))
+
+          this.cleanHistoryAndGoBack()
         } else {
           this.$store.state.previewTask.taskName = null
           this.$store.state.previewTask.taskId = ''
@@ -323,6 +386,8 @@ export default {
                 return res
               })
               .catch(err => console.error(err))
+
+          this.cleanHistoryAndGoBack()
         }
       }
     },
@@ -451,9 +516,27 @@ export default {
 
       console.log('Delete ToDo', todo)
     },
+    setHistory () {
+      if (!this.history.length) {
+        this.history.push([JSON.parse(JSON.stringify(this.taskEdit)), 'set-history'])
+        this.recordHistory()
+      } else {
+        return
+      }
+    },
     writeHistory (action) {
       this.history.push([JSON.parse(JSON.stringify(this.taskEdit)), action])
-      this.setHistory()
+      this.recordHistory()
+    },
+    cleanHistory () {
+      // срабатываем при отмене всех действий
+      this.$store.state.history.splice(1)
+      this.recordHistory()
+    },
+    cleanHistoryAndGoBack () {
+      // срабатывает при удалении задания - костыль небольшой - так как по-хорошему лучше объединить в два метода
+      this.$store.state.history = []
+      this.recordHistory()
     }
   }
 }

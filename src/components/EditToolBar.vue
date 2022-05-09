@@ -27,6 +27,7 @@
 
       <button
         :content="this.$route.params.taskView !== 'preview' ? 'Сохранить задание' : 'Отправить задание'"
+        :disabled="this.historyLength === 1"
         v-tippy
       >
         <i
@@ -51,6 +52,8 @@
 
       <button
         content="Действие назад"
+        :disabled="this.historyCurrentIndex === 0"
+        @click="$emit('historyBack')"
         v-tippy
       >
         <i
@@ -61,6 +64,8 @@
 
       <button
         content="Действие вперед"
+        :disabled="this.historyCurrentIndex === this.historyLength - 1"
+        @click="$emit('historyForward')"
         v-tippy
       >
         <i
@@ -79,6 +84,7 @@ import addTaskToDb from "@/mixins/addTaskToDb"
 export default {
   methods: {
     goBack () {
+      this.$emit('cleanHistoryAndGoBack')
       this.$router.go(-1)
     },
     sendTask () {
@@ -101,6 +107,12 @@ export default {
     },
     canCancelEditing: {
       type: Boolean
+    },
+    historyLength: {
+      type: Number
+    },
+    historyCurrentIndex: {
+      type: Number
     }
   }
 }

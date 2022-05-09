@@ -5,7 +5,6 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
-    // modalText: '',
     previewTask: {
       taskName: null,
       taskId: '',
@@ -13,7 +12,6 @@ export default new Vuex.Store({
       done: false,
       editState: false,
       taskNameEditState: false
-      // костыль
     },
     tasks: [
 
