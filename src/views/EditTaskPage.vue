@@ -5,14 +5,14 @@
       class="edit-tool-bar"
     >
       <EditToolBar
-        @changeModalState="changeModalState"
         :canCancelEditing="this.canCancelEditing"
         :historyLength="historyLength"
         :historyCurrentIndex="historyCurrentIndex"
         :taskToSend="this.taskEdit"
+        @changeModalState="changeModalState"
         @cleanHistoryAndGoBack="cleanHistoryAndGoBack"
-        @historyBack="testBack"
-        @historyForward="testForward"
+        @historyBack="historyBack"
+        @historyForward="historyForward"
       />
     </div>
 
@@ -35,9 +35,9 @@
                 <p>
                   <input
                     type="checkbox"
-                    :disabled="this.taskEdit.todos.length ? true : false"
+                    :disabled="!!this.taskEdit.todos.length"
                     v-model="taskEdit.done"
-                    @change="saveDataToDb(), writeHistory('change task-done')"
+                    @change="saveDataToDb() && writeHistory('change task-done')"
                   >
                   {{this.taskEdit.taskName}}
                 </p>
@@ -223,37 +223,29 @@ export default {
         .catch(err => console.error(err))
   },
   computed: {
-    moveBackAmount () {
-      return +this.moveBack
-    },
     history () {
       return this.$store.getters.history_getter
     },
     historyLength () {
       return +this.$store.state.history.length
     },
+    historyCurrentIndex () {
+      let result = this.historyLength - this.moveBack + this.moveForward - 1
+      if (result < 0) {
+        result = 0
+      }
+      return result
+    },
     canCancelEditing () {
       // два объекта не равны друг другу даже если их свойства полностью одинаковы
       // поэтому прибегаем к такому методу сравнения
-      if ((JSON.stringify(this.taskBeforeEdit) == JSON.stringify(this.taskEdit))) {
-        return false
-      } else {
-        return true
-      }
+      return (JSON.stringify(this.taskBeforeEdit) != JSON.stringify(this.taskEdit));
     },
-    allDone () {
-      if (this.taskEdit.todos.some(td => td.done === false)) {
-        return false
-      } else {
-        return true
-      }
+    isAllDone () {
+      return !this.taskEdit.todos.some(td => td.done === false);
     },
-    someEdit () {
-      if (this.taskEdit.todos.every(td => td.editState === false)) {
-        return false
-      } else {
-        return true
-      }
+    isSomeEdit () {
+      return !this.taskEdit.todos.every(td => td.editState === false);
     },
     previewTask () {
       return this.$store.getters.preview_task_getter
@@ -272,49 +264,36 @@ export default {
     },
     taskBeforeEdit () {
       return this.$store.state.taskBeforeEdit
-    },
-    historyCurrentIndex () {
-      let result = this.historyLength - this.moveBack + this.moveForward - 1
-      if (result < 0) {
-        result = 0
-      }
-      return result
-    },
+    }
   },
   methods: {
-    testBack () {
+    historyBack () {
       if (this.historyCurrentIndex === 0) {
         console.log('уже некуда move back Але')
       } else {
         console.log('move back')
         this.moveBack += 1
-
-        this.taskEdit.taskNameEditState = this.history[this.historyCurrentIndex][0].taskNameEditState
-        this.taskEdit.editState = this.history[this.historyCurrentIndex][0].editState
-        this.taskEdit.taskName = this.history[this.historyCurrentIndex][0].taskName
-        this.taskEdit.done = this.history[this.historyCurrentIndex][0].done
-
-        this.taskEdit.todos = JSON.parse(JSON.stringify(this.history[this.historyCurrentIndex][0].todos))
-
-        this.saveDataToDb()
+        this.showHistory()
       }
     },
-    testForward () {
+    historyForward () {
       if (this.historyCurrentIndex === this.historyLength - 1) {
         console.log('уже некуда move forward Але')
       } else {
         console.log('move forward')
         this.moveForward += 1
-
-        this.taskEdit.taskNameEditState = this.history[this.historyCurrentIndex][0].taskNameEditState
-        this.taskEdit.editState = this.history[this.historyCurrentIndex][0].editState
-        this.taskEdit.taskName = this.history[this.historyCurrentIndex][0].taskName
-        this.taskEdit.done = this.history[this.historyCurrentIndex][0].done
-
-        this.taskEdit.todos = JSON.parse(JSON.stringify(this.history[this.historyCurrentIndex][0].todos))
-
-        this.saveDataToDb()
+        this.showHistory()
       }
+    },
+    showHistory () {
+      this.taskEdit.taskNameEditState = this.history[this.historyCurrentIndex][0].taskNameEditState
+      this.taskEdit.editState = this.history[this.historyCurrentIndex][0].editState
+      this.taskEdit.taskName = this.history[this.historyCurrentIndex][0].taskName
+      this.taskEdit.done = this.history[this.historyCurrentIndex][0].done
+
+      this.taskEdit.todos = JSON.parse(JSON.stringify(this.history[this.historyCurrentIndex][0].todos))
+
+      this.saveDataToDb()
     },
     recordHistory () {
       tasksLocalForage.setItem('history', this.history)
@@ -343,7 +322,7 @@ export default {
 
       this.beforeEdit()
       this.saveDataToDb()
-      this.cleanHistory()
+      this.cleanHistoryButStay()
     },
     beforeEdit () {
       this.taskEdit.taskNameEditState = this.taskBeforeEdit.taskNameEditState
@@ -435,12 +414,12 @@ export default {
       }
     },
     checkIsAllDone () {
-      this.taskEdit.done = this.allDone
+      this.taskEdit.done = this.isAllDone
       this.saveDataToDb()
     },
     checkIsSomeEdit () {
       if (this.taskEdit.todos.length) {
-        this.taskEdit.editState = this.someEdit
+        this.taskEdit.editState = this.isSomeEdit
         this.saveDataToDb()
       }
     },
@@ -509,9 +488,7 @@ export default {
       this.taskEdit.todos.splice(index, 1);
 
       this.writeHistory('delete todo')
-
       this.checkIsAllDone()
-
       this.saveDataToDb()
 
       console.log('Delete ToDo', todo)
@@ -521,14 +498,14 @@ export default {
         this.history.push([JSON.parse(JSON.stringify(this.taskEdit)), 'set-history'])
         this.recordHistory()
       } else {
-        return
+        console.error('ERROR! EditTaskPage - setHistory')
       }
     },
     writeHistory (action) {
       this.history.push([JSON.parse(JSON.stringify(this.taskEdit)), action])
       this.recordHistory()
     },
-    cleanHistory () {
+    cleanHistoryButStay() {
       // срабатываем при отмене всех действий
       this.$store.state.history.splice(1)
       this.recordHistory()
