@@ -18,7 +18,8 @@
                 type="checkbox"
                 disabled
               >
-              {{!this.task.taskNameEditState ? this.task.taskName : 'в редакции'}}
+              <!-- особенность vue - перенос строчки в коде воспринимает как пробел при интерполяции между span или каким-либо другим тегом -->
+              <span class="taskName" :class="this.task.taskNameEditState ? 'inEdit' : ''">{{!this.task.taskNameEditState ? this.task.taskName : 'в редакции'}}</span>
             </p>
           </h3>
         </div>
@@ -54,11 +55,7 @@
           disabled
           v-model="todo.done"
         >
-          <span
-            class="todoText"
-          >
-            {{!todo.editState ? todo.todoText : 'в редакции'}}
-          </span>
+          <span class="todoText" :class="todo.editState ? 'inEdit' : ''">{{!todo.editState ? todo.todoText : 'в редакции'}}</span>
       </li>
     </ul>
 
@@ -151,6 +148,15 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.taskName {
+  margin-left: 5px;
+}
+
+.inEdit {
+  background-color: #ffffff;
+  padding: 2px;
+}
+
 li:first-child {
   margin-top: 5px;
 }
@@ -202,6 +208,10 @@ a, i:hover {
   background-color: aquamarine;
 }
 
+.todoText {
+  margin-left: 5px;
+}
+
 @media (max-width: 500px) {
   .task-list {
     &__task-item {
@@ -240,6 +250,7 @@ a, i:hover {
   }
 
   .todoText {
+    margin-left: 2px;
     font-size: 9px;
   }
 }

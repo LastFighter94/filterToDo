@@ -49,7 +49,7 @@
             >
               <i
                 :class="taskEdit.taskNameEditState ? 'fa-solid fa-floppy-disk' : 'fa-solid fa-pen'"
-                @click="taskEdit.taskNameEditState ? saveTaskNameChanges(taskEdit) : editTaskNameState(taskEdit)"
+                @click="taskEdit.taskNameEditState ? saveTaskNameChanges(taskEdit) : startEditTaskName(taskEdit)"
               >
               </i>
 
@@ -66,7 +66,10 @@
             class="editBar"
           >
             <textarea
-              v-model="newTaskName"
+              v-model="taskEdit.taskName"
+              @keypress.enter.prevent="saveTaskNameChanges(taskEdit)"
+              @input="debounceSaveDataToDb"
+              :maxlength="nameMaxLength"
             >
             </textarea>
           </div>
@@ -103,7 +106,7 @@
             >
               <i
                 :class="todo.editState ? 'fa-solid fa-floppy-disk' : 'fa-solid fa-pen'"
-                @click="todo.editState ? saveToDoChanges(todo) : editToDoState(todo)"
+                @click="todo.editState ? saveToDoChanges(todo) : startEditToDo(todo)"
               >
               </i>
 
@@ -120,7 +123,10 @@
             :style="todo.editState ? 'display:flex' : 'display: none'"
           >
             <textarea
-              v-model="newTodoText"
+              v-model="todo.todoText"
+              @keypress.enter.prevent="saveToDoChanges(todo)"
+              @input="debounceSaveDataToDb"
+              :maxlength="todoMaxLength"
             >
             </textarea>
           </div>
@@ -131,12 +137,16 @@
     <div
       class="add-todo"
     >
-      <div>
+      <div
+        class="add-todo__left-side"
+      >
         <input
           type="text"
           placeholder="Добавить еще пункт"
           v-model="todoText"
-          @keyup.enter="addTodoText(taskEdit.todos), checkIsAllDone()"
+          @keypress.enter="addTodoText(taskEdit.todos), checkIsAllDone()"
+          @input="debounceSaveDataToDb"
+          :maxlength="todoMaxLength"
           >
       </div>
 
@@ -175,6 +185,7 @@ import notifyShow from '../mixins/notifyShow'
 import randomNumMixin from '../mixins/randomNumMixin'
 
 import localforage from 'localforage'
+import debounce from 'lodash/debounce'
 
 const tasksLocalForage = localforage.createInstance({
   name: 'DraftDB',
@@ -192,7 +203,6 @@ export default {
       taskId: this.$route.params.taskId,
       taskView: this.$route.params.taskView,
       newTaskName: '',
-      newTodoText: '',
       showModalState: false,
       wantCancelEditing: false,
       moveBack: 0,
@@ -264,9 +274,23 @@ export default {
     },
     taskBeforeEdit () {
       return this.$store.state.taskBeforeEdit
+    },
+    todoMaxLength () {
+      return this.$store.getters.todoMaxLength_getter
+    },
+    nameMaxLength () {
+      return this.$store.getters.nameMaxLength_getter
     }
   },
   methods: {
+    debounceSaveDataToDb () {
+      this.debounceSaveToDoToDb()
+    },
+    debounce,
+    debounceSaveToDoToDb:
+        debounce(function () {
+            this.saveDataToDb()
+        }, 500),
     historyBack () {
       if (this.historyCurrentIndex === 0) {
         console.log('уже некуда move back Але')
@@ -371,12 +395,24 @@ export default {
       }
     },
     getDataFromDb () {
+      // миксин getItemLf почему-то не срабатываем правильно
       tasksLocalForage.getItem('taskBeforeEdit')
       .then(res => {
         if (!res) {
           return
         } else {
           this.$store.state.taskBeforeEdit = res
+        }
+        return res
+      })
+      .catch(err => console.log(err))
+
+      tasksLocalForage.getItem('todoText')
+      .then(res => {
+        if (!res) {
+          return
+        } else {
+          this.todoText = res
         }
         return res
       })
@@ -405,6 +441,9 @@ export default {
       .catch(err => console.log(err))
     },
     saveDataToDb () {
+      tasksLocalForage.setItem('todoText', this.todoText)
+          .catch(err => console.error(err))
+
       if (this.taskView !== 'preview') {
         tasksLocalForage.setItem('tasksLocalForage', this.$store.getters.tasks_getter)
           .catch(err => console.error(err))
@@ -426,13 +465,13 @@ export default {
     randomId (key) {
       return String(this.randomNumMixin(1,100)) + key.toUpperCase().slice(0,30) + String(this.randomNumMixin(1,100))
     },
-    editTaskNameState (task) {
+    startEditTaskName (task) {
       task.taskNameEditState = !task.taskNameEditState
       this.saveDataToDb()
       this.writeHistory('edit task name')
     },
     saveTaskNameChanges (task) {
-      if (!this.newTaskName.length) {
+      if (!task.taskName.length) {
         this.notify_show('Добавьте текст задания', 'ERROR:', 'error')
       }
 
@@ -441,27 +480,27 @@ export default {
       let existingTasks = this.tasks.slice(0)
       existingTasks.splice(index, 1);
 
-      if (this.checkCoincidence(existingTasks, this.newTaskName, 'taskName')) {
+      if (this.checkCoincidence(existingTasks, task.taskName, 'taskName')) {
         this.notify_show('Задание с таким именем уже существует!', 'ERROR:', 'error')
       }
 
-      if (!this.checkCoincidence(existingTasks, this.newTaskName, 'taskName') && this.newTaskName.length) {
+      if (!this.checkCoincidence(existingTasks, task.taskName, 'taskName') && task.taskName.length) {
         task.taskNameEditState = !task.taskNameEditState
-        task.taskName = this.newTaskName
+
         this.saveDataToDb()
         this.notify_show('Имя задания отредактировано!', 'SUCCESS:', 'success')
 
         this.writeHistory('save new task-name')
       }
     },
-    editToDoState (todo) {
+    startEditToDo (todo) {
         todo.editState = !todo.editState
-        this.checkIsSomeEdit()
 
+        this.checkIsSomeEdit()
         this.writeHistory('edit todo')
     },
     saveToDoChanges (todo) {
-      if (!this.newTodoText.length) {
+      if (todo.todoText.length === 0) {
         this.notify_show('Пожалуйста - добавьте текст пункта', 'ERROR:', 'error')
       }
 
@@ -470,13 +509,12 @@ export default {
       let existingTodos = this.taskEdit.todos.slice(0)
       existingTodos.splice(index, 1);
 
-      if (this.checkCoincidence(existingTodos, this.newTodoText, 'todoText')) {
+      if (this.checkCoincidence(existingTodos, todo.todoText, 'todoText')) {
         this.notify_show('Пункт с таким именем уже существует!', 'ERROR:', 'error')
       }
 
-      if (!this.checkCoincidence(existingTodos, this.newTodoText, 'todoText') && this.newTodoText.length) {
+      if (!this.checkCoincidence(existingTodos, todo.todoText, 'todoText') && todo.todoText.length > 0) {
       todo.editState = !todo.editState
-      todo.todoText = this.newTodoText
       this.checkIsSomeEdit()
       this.notify_show('Пункт отредактирован!', 'SUCCESS:', 'success')
 
@@ -587,7 +625,7 @@ i {
 input[type=text] {
   margin: 5px;
   padding: 2px;
-  min-width: 200px;
+  width: 100%;
   min-height: 30px;
   border: 1px solid transparent;
 }
@@ -597,6 +635,10 @@ input[type=text] {
   text-align: center;
   display: flex;
   padding: 5px;
+
+  &__left-side {
+    width: 100%;
+  }
 }
 
 button {
@@ -640,10 +682,22 @@ button:hover {
   input[type=text] {
     min-height: 25px;
     text-align: center;
+    min-width: 200px;
+  }
+}
+
+@media (min-width: 250px) and (max-width: 300px) {
+  input[type=text] {
+    min-width: 200px;
   }
 }
 
 @media (max-width: 300px) {
+  input[type=text] {
+    min-width: 200px;
+    width: auto;
+  }
+
   .add-todo {
     display: block;
   }

@@ -25,12 +25,9 @@
     <div
       class="add-container__task-form"
     >
-    <form
-      @submit.prevent="submit_task"
-    >
       <button
         v-if="previewTask.taskName && previewTask.todos.length && !previewTask.editState && !previewTask.taskNameEditState"
-        type="submit"
+        @click.prevent="submit_task"
         class="add-container__task-form__btn"
       >
         Отправить задание
@@ -40,7 +37,9 @@
       <input
         v-model="taskName"
         type="text"
+        class="test"
         placeholder="Имя Задания"
+        @keypress.enter.prevent="addTaskName"
       >
 
       <button
@@ -54,10 +53,14 @@
       </button>
       </p>
 
+      <div
+          v-if="previewTask.taskName"
+      >
       <input
         v-model="todoText"
         type="text"
         placeholder="Пункт задания"
+        @keypress.enter.prevent="addTodoText(previewTask.todos), savePreviewToDb()"
       >
 
       <button
@@ -69,7 +72,8 @@
         >
         </span>
       </button>
-    </form>
+      </div>
+
     </div>
 
     <transition
@@ -130,7 +134,7 @@ export default {
   },
   methods: {
     writeHistory() {
-      // заглушка - костыль на mixin AddToDo
+      // заглушка на mixin AddToDo
       return true
     },
     toggleAddTaskForm () {

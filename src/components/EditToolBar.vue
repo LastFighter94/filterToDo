@@ -27,7 +27,7 @@
 
       <button
         :content="this.$route.params.taskView !== 'preview' ? 'Сохранить задание' : 'Отправить задание'"
-        :disabled="this.historyLength === 1"
+        :disabled="this.historyLength === 1 && this.$route.params.taskView !== 'preview'"
         v-tippy
       >
         <i

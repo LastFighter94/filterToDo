@@ -17,7 +17,9 @@ export default new Vuex.Store({
 
     ],
     taskBeforeEdit: null,
-    history: []
+    history: [],
+    nameMaxLength: 200,
+    todoMaxLength: 500
   },
   mutations: {
     addTask: (state, payload) => {
@@ -40,6 +42,12 @@ export default new Vuex.Store({
     },
     history_getter: state => {
       return state.history
+    },
+    nameMaxLength_getter: state => {
+      return state.nameMaxLength
+    },
+    todoMaxLength_getter: state => {
+      return state.todoMaxLength
     },
   },
 })

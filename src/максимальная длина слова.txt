@@ -1,0 +1,17 @@
+let text = 'текст      который   ,    будет     отредактирован и станет      без        лишних     пробелов'
+console.log(text)
+
+let noSpaces = text.replace(/\s{2,}/g, ' ')
+console.log(noSpaces)
+
+let checked_array = noSpaces.split(' ')
+console.log(checked_array)
+
+// проверка на длину слова
+checked_array.forEach(function(item, i) {
+if (checked_array[i].length > 10) {
+  console.log('больше 10 символов!')
+}
+});
+
+по этой логике можно легко создать mixin или function helper

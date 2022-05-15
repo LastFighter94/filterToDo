@@ -26,4 +26,4 @@ TaskItem - оставляем как есть
 
 EditToolBar и AddTaskForm - вынес дублирующийся код в mixin addTaskToDb - единственный косячный момент заключается в том, что в AddTaskForm два раза импортируется localForage
 
-todo сделать глобальный импорт localForage если это возможно
+сделать глобальный импорт localForage если это возможно
