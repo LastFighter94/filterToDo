@@ -5,6 +5,13 @@ import NotFound from '../views/NotFound.vue'
 
 Vue.use(VueRouter)
 
+// const test = (to, from, next) => {
+//   console.log(to)
+//   console.log(from)
+//   console.log(next)
+//   next()
+// }
+
 const routes = [
   {
     path: '/',
@@ -12,12 +19,13 @@ const routes = [
     component: TaskListPage
   },
   {
-    path: '/edittaskpage/:taskId/:taskView',
+    path: '/edit/:taskId/:taskView',
     name: 'EditTaskPage',
     // route level code-splitting
     // this generates a separate chunk (about.[hash].js) for this route
     // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "edittaskpage" */ '../views/EditTaskPage.vue'),
+    component: () => import(/* webpackChunkName: "edit" */ '../views/EditTaskPage.vue'),
+    // beforeEnter: test
   },
   {
     path: '/:pathMatch(.*)*',

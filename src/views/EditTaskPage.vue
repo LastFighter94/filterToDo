@@ -1,5 +1,8 @@
 <template>
-<div>
+<div
+    v-if="!hideWarns"
+>
+<!-- заглушка на warns при обновлении страницы в том же роуте (ибо итак происходит редирект) -->
   <div class="wrapper">
     <div
       class="edit-tool-bar"
@@ -206,7 +209,8 @@ export default {
       showModalState: false,
       wantCancelEditing: false,
       moveBack: 0,
-      moveForward: 0
+      moveForward: 0,
+      hideWarns: false
     }
   },
   mixins: [
@@ -215,22 +219,28 @@ export default {
       notifyShow,
       randomNumMixin
   ],
+  beforeDestroy() {
+    this.cleanHistoryAndGoBack()
+  },
   created () {
-    // проверка на наличие taskId - если такового нет, то redirect на NotFound
-    let checkId = this.tasks.find(t => t.taskId === this.taskId)
+    // проверка на наличие taskId - если такового нет, то redirect
+    let checkIdTask = this.tasks.find(t => t.taskId === this.taskId)
 
-    if (checkId === undefined && this.taskView === 'task') {
-      this.routerPush({ name: 'NotFound' })
-    //  косяк в том, что при обновлении страницы в состоянии taskView === 'task' идет redirect
-    //  на страницу 404, хотя это должно работать только в случае если пользователь
-    //  специально введет несуществующий id в адресе и нажмет enter
-    //  router-mistake
+    if (checkIdTask === undefined && this.taskView === 'task') {
+      this.routerPush({ name: 'TaskListPage' })
+
+      this.hideWarns = true
+    //  косяк в том, что при обновлении страницы в состоянии taskView === 'task' есть redirect
+    //  хотя это должно работать только в случае если пользователь специально введет
+    //  несуществующий id в адресе и нажмет enter
     }
 
-    tasksLocalForage.setItem('taskBeforeEdit', this.taskEdit)
-        .then(this.getDataFromDb)
-        .then(this.setHistory)
-        .catch(err => console.error(err))
+    if (!this.hideWarns) {
+      tasksLocalForage.setItem('taskBeforeEdit', this.taskEdit)
+          .then(this.getDataFromDb)
+          .then(this.setHistory)
+          .catch(err => console.error(err))
+    }
   },
   computed: {
     history () {
@@ -549,6 +559,7 @@ export default {
       this.recordHistory()
     },
     cleanHistoryAndGoBack () {
+      this.hideWarns = true
       // срабатывает при удалении задания - костыль небольшой - так как по-хорошему лучше объединить в два метода
       this.$store.state.history = []
       this.recordHistory()

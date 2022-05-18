@@ -85,7 +85,9 @@ export default {
   methods: {
     goBack () {
       this.$emit('cleanHistoryAndGoBack')
-      this.$router.go(-1)
+      this.$router.push({
+        name: 'TaskListPage'
+      })
     },
     sendTask () {
       if (this.$route.params.taskView !== 'preview') {
